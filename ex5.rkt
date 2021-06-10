@@ -66,7 +66,19 @@
 (define leaf? (lambda (x) (not (list? x))))
 (define equal-trees$ 
  (lambda (tree1 tree2 succ fail)
-   #f;@TODO
+   (cond ((empty? tree1) (if (empty? tree2)
+                             (succ '())
+                             (fail (cons _?_ (car tree2)))))
+         ((empty? tree2) (fail (cons (car tree1) _?_)))
+         ((leaf? tree1) (if (leaf? tree2)
+                             (succ (cons tree1 tree2))
+                             (fail (cons tree1 tree2))))
+        
+         (else (equal-trees$ (cdr tree1)
+                             (cdr tree2)
+                             (lambda (suc-res)
+                               (succ (append$ (cons (car tree1)(car tree2)) suc-res) _?_))
+                             (lambda (fail-res) (fail fail-res)))))
  )
 )
 
