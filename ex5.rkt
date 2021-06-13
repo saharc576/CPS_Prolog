@@ -1,4 +1,5 @@
 #lang racket
+(define id (lambda (x) x))
 
 (provide (all-defined-out))
 
@@ -58,26 +59,27 @@
   )
 )
 
-
 ;;; Q1.2
 ; Signature: equal-trees$(tree1, tree2, succ, fail) 
 ; Type: [Tree * Tree * [Tree ->T1] * [Pair->T2] -> T1 U T2
 ; Purpose: Determines the structure identity of a given two lists, with post-processing succ/fail
-(define leaf? (lambda (x) (not (list? x))))
 (define equal-trees$ 
  (lambda (tree1 tree2 succ fail)
    (cond ((empty? tree1) (if (empty? tree2)
                              (succ '())
-                             (fail (cons _?_ (car tree2)))))
-         ((empty? tree2) (fail (cons (car tree1) _?_)))
+                             (fail (cons '() (car tree2)))))
+         ((empty? tree2) (fail (cons (car tree1) '())))
          ((leaf? tree1) (if (leaf? tree2)
                              (succ (cons tree1 tree2))
-                             (fail (cons tree1 tree2))))
-        
-         (else (equal-trees$ (cdr tree1)
-                             (cdr tree2)
-                             (lambda (suc-res)
-                               (succ (append$ (cons (car tree1)(car tree2)) suc-res) _?_))
+                             (fail (cons tree1  tree2))))
+         ((leaf? tree2) (fail (car tree1) tree2))
+         (else (equal-trees$ (car tree1)
+                             (car tree2)
+                             (lambda (suc-car)
+                               (equal-trees$ (cdr tree1) (cdr tree2)
+                               (lambda (suc-cdr)
+                                 (succ (cons suc-car suc-cdr) ))
+                               fail))
                              (lambda (fail-res) (fail fail-res)))))
  )
 )
@@ -86,11 +88,14 @@
 ; Signature: reduce1-lzl(reducer, init, lzl) 
 ; Type: [T2*T1 -> T2] * T2 * LzL<T1> -> T2
 ; Purpose: Returns the reduced value of the given lazy list
-(define reduce1-lzl 
+(define reduce1-lzl
   (lambda (reducer init lzl)
-   #f ;@TODO
+   (if (empty-lzl? lzl)
+       init
+       (reduce1-lzl reducer (reducer init (head lzl)) (tail lzl))
+    )
   )
-)  
+)
 
 ;;; Q2b
 ; Signature: reduce2-lzl(reducer, init, lzl, n) 
@@ -98,7 +103,10 @@
 ; Purpose: Returns the reduced value of the first n items in the given lazy list
 (define reduce2-lzl 
   (lambda (reducer init lzl n)
-    #f ;@TODO
+    (if (or (= n 0) (empty-lzl? lzl))
+       init
+       (reduce2-lzl reducer (reducer init (head lzl)) (tail lzl) (- n 1))
+    )
   )
 )  
 
@@ -108,17 +116,23 @@
 ; Purpose: Returns the reduced values of the given lazy list items as a lazy list
 (define reduce3-lzl 
   (lambda (reducer init lzl)
-    #f ;@TODO
+    (if (empty-lzl? lzl)
+        empty-lzl
+        (cons-lzl
+         (reducer init (head lzl))
+         (lambda () (reduce3-lzl reducer (reducer init (head lzl)) (tail lzl)))
+         )
+        )
+    )
   )
-)  
- 
+
 ;;; Q2e
 ; Signature: integers-steps-from(from,step) 
 ; Type: Number * Number -> Lzl<Number>
 ; Purpose: Returns a list of integers from 'from' with 'steps' jumps
 (define integers-steps-from
   (lambda (from step)
-    #f ; @TODO
+    (cons-lzl from (lambda () (integers-steps-from (+ from step) step)))
   )
 )
 
@@ -128,6 +142,9 @@
 ; Purpose: Returns the approximations of pi as a lazy list
 (define generate-pi-approximations
   (lambda ()
-    #f ; @TODO
+    (define a 1)
+    (define f (lambda (x) (* 8 (/ 1 (* (+ a x) (+ a (+ 2 x)))))))
+    (define map1 (map-lzl f (integers-steps-from 0 4)))
+    (reduce3-lzl + 0 map1)
    )
  )
